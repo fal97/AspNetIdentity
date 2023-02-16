@@ -11,10 +11,12 @@ namespace AspNetIdentity.Api.Controllers
     {
         private IUserService _userService;
         private IMailService _mailService;
+        private IConfiguration _configuration;
 
-        public AuthController(IUserService userService, IMailService mailService)
+        public AuthController(IUserService userService, IMailService mailService,IConfiguration configuration)
         {
             _userService = userService;
+            _configuration= configuration;
             _mailService = mailService;
         }
 
@@ -53,6 +55,25 @@ namespace AspNetIdentity.Api.Controllers
             }
 
             return BadRequest("Some properties are not valid");
+        }
+
+        //api/auth/confirmemail?userid&token
+        [HttpGet("ConfirmEmail")]
+        public async Task<IActionResult> ConfirmEmail(string userId,string token)
+        {
+            if(string.IsNullOrWhiteSpace(userId)|| string.IsNullOrWhiteSpace(token))
+            {
+                return NotFound();
+            }
+
+            var result = await _userService.ConfirmEmailAsync(userId, token);
+
+            if(result.IsSuccess) {
+                return Redirect($"{_configuration["AppUrl"]}/confirmEmail.html");
+            }
+
+            return BadRequest(); 
+
         }
     }
 }

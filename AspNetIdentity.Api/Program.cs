@@ -69,6 +69,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("CorsApi");
 
+app.UseStaticFiles();
+
 app.UseAuthentication();
 
 app.UseAuthorization();
