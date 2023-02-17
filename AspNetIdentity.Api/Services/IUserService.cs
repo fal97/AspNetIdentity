@@ -16,6 +16,8 @@ namespace AspNetIdentity.Api.Services
         Task<UserManagerResponse> LoginUserAsync(LoginViewModel model);
 
         Task<UserManagerResponse> ConfirmEmailAsync(string userId, string token);
+
+        Task<UserManagerResponse> ForgetPasswordAsync(string email);
     }
 
     public class UserService : IUserService
@@ -162,6 +164,36 @@ namespace AspNetIdentity.Api.Services
 
 
             }
+            throw new NotImplementedException();
+        }
+
+        public  async Task<UserManagerResponse> ForgetPasswordAsync(string email)
+        {
+            var user = await _userManager.FindByEmailAsync(email);
+            if (user == null)
+            {
+                return new UserManagerResponse
+                {
+                    IsSuccess = false,
+                    Message = " No User allocated with the email!"
+                };
+            }
+
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+
+
+            var encodedEmailToken = Encoding.UTF8.GetBytes(token);
+            //valid token with plain string without no special charactors
+            var validToken = WebEncoders.Base64UrlEncode(encodedEmailToken);
+
+            string url = $"{_configuration["AppUrl"]}/ResetPassword?email={email}&token={validToken}";
+
+            await _mailService.SendEmailAsync(email, "Reset Password",
+                "Follow the instructions to reset your password</h1>" +
+                $"<p>to reset your password <a href='{url}'>Click here</a></p>");
+
+
+
             throw new NotImplementedException();
         }
     }
