@@ -1,5 +1,6 @@
 using AspNetIdentity.Api.Models;
 using AspNetIdentity.Api.Services;
+using Mailgun;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -48,6 +49,8 @@ builder.Services.AddAuthentication(auth =>
 
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddTransient<IMailService, MailService>();
+
+builder.Services.AddSingleton<IMailgunClient>(new MailgunClient("<your-domain>", "<your-api-key>",""));
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
