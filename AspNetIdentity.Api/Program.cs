@@ -48,6 +48,7 @@ builder.Services.AddAuthentication(auth =>
 });
 
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IMailGunService, MailGunService>();
 builder.Services.AddTransient<IMailService, MailService>();
 
 builder.Services.AddSingleton<IMailgunClient>(new MailgunClient("<your-domain>", "<your-api-key>",""));

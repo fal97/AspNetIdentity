@@ -3,49 +3,44 @@
 using AspNetIdentity.Api.Dtos;
 using RestSharp.Authenticators;
 using RestSharp;
+using static System.Net.WebRequestMethods;
 
 namespace AspNetIdentity.Api.Services
 {
     public interface IMailGunService
     {
-        Task SendMailAsync(UserEmailOptions userEmailOptions);
+        Task<IRestResponse> SendMailAsync(UserEmailOptions userEmailOptions);
     }
 
 
     public class MailGunService : IMailGunService
     {
-        private const string APIKey = "xxxxxxxxxxxxxxx-xxxxx-xxxxx";
-        private const string BaseUri = "https://api.mailgun.net/v3";
-        private const string Domain = "xxxxxx.xxx";
-        private const string SenderAddress = "abijanudara97@gmail.com";
-        private const string SenderDisplayName = "Abijan";
-        private const string Tag = "sampleTag";
+        private readonly IConfiguration _configuration;
 
-        public async Task SendMailAsync(UserEmailOptions userEmailOptions)
+        public MailGunService(IConfiguration configuration)
         {
-            RestClient client = new RestClient
-            {
-                BaseUrl = new Uri(BaseUri),
-                Authenticator = new HttpBasicAuthenticator("api", APIKey)
-            };
+            _configuration = configuration;
+        }
 
+        public async Task<IRestResponse> SendMailAsync(UserEmailOptions userEmailOptions)
+        {
+            RestClient client = new RestClient();
+            client.BaseUrl = new Uri("https://api.mailgun.net/v3");           
+
+            client.Authenticator =
+            new HttpBasicAuthenticator("api",
+                                       "4c7325dc861f19c213d18256d867af7d-ca9eeb88-2cd981b1");
             RestRequest request = new RestRequest();
-            request.AddParameter("domain", Domain, ParameterType.UrlSegment);
+            request.AddParameter("domain", "sandboxdb77de88cea24c3e9a514c0ce7a44a02.mailgun.org", ParameterType.UrlSegment);
             request.Resource = "{domain}/messages";
-            request.AddParameter("from", $"{SenderDisplayName} <{SenderAddress}>");
-
-            foreach (var toEmail in userEmailOptions.ToEmails)
-            {
-                request.AddParameter("to", toEmail);
-            }
-
+            request.AddParameter("from", "Mailgun Sandbox <postmaster@sandboxdb77de88cea24c3e9a514c0ce7a44a02.mailgun.org>");
+            request.AddParameter("to", "Abijan Padmathilaka <abijanudara97@gmail.com>");
             request.AddParameter("subject", userEmailOptions.Subject);
-            request.AddParameter("html", userEmailOptions.Body);
-            request.AddParameter("o:tag", Tag);
+            request.AddParameter("text", userEmailOptions.Body);
             request.Method = Method.POST;
-            client.Execute(request);
+            return client.Execute(request);
 
-           
+
         }
     }
 }
