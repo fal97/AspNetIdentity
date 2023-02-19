@@ -28,6 +28,7 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
     options.Password.RequiredLength = 5;
 }).AddEntityFrameworkStores<ApplicationDbContext>().AddDefaultTokenProviders();
 
+builder.Services.AddRazorPages();
 
 builder.Services.AddAuthentication(auth =>
 {
@@ -76,5 +77,9 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.MapRazorPages();
+
+
 
 app.Run();

@@ -1,8 +1,10 @@
-﻿using AspNetIdentity.Shared;
+﻿using AspNetIdentity.Api.Models;
+using AspNetIdentity.Shared;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.IdentityModel.Tokens;
+using Newtonsoft.Json.Linq;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -18,6 +20,8 @@ namespace AspNetIdentity.Api.Services
         Task<UserManagerResponse> ConfirmEmailAsync(string userId, string token);
 
         Task<UserManagerResponse> ForgetPasswordAsync(string email);
+
+        Task<UserManagerResponse> ResetPasswordAsync(ResetPasswordViewModel model);
     }
 
     public class UserService : IUserService
@@ -25,7 +29,7 @@ namespace AspNetIdentity.Api.Services
         private UserManager<IdentityUser> _userManager;
         private IConfiguration _configuration;
         private IMailService _mailService;
-        public UserService(UserManager<IdentityUser> userManager,IConfiguration configuration, IMailService mailService)
+        public UserService(UserManager<IdentityUser> userManager, IConfiguration configuration, IMailService mailService)
         {
             _userManager = userManager;
             _configuration = configuration;
@@ -38,7 +42,7 @@ namespace AspNetIdentity.Api.Services
                 throw new NullReferenceException("Register model is null");
             }
 
-            if(model.Password != model.ConfirmPassword)
+            if (model.Password != model.ConfirmPassword)
             {
                 return new UserManagerResponse
                 {
@@ -53,7 +57,7 @@ namespace AspNetIdentity.Api.Services
                 UserName = model.Email
             };
 
-            var result  = await _userManager.CreateAsync(identityUser,model.Password);
+            var result = await _userManager.CreateAsync(identityUser, model.Password);
 
             if (result.Succeeded)
             {
@@ -66,8 +70,8 @@ namespace AspNetIdentity.Api.Services
                 //setting the url for user to comeback
                 string url = $"{_configuration["AppUrl"]}/api/auth/confirmemail?userId={identityUser.Id}&token={validEmailToken}";
 
-                await _mailService.SendEmailAsync(identityUser.Email, "Confirm your email", "<h1>Welcome to auth demo</h1>" 
-                    + $"<p>please confirm your email by <a href='{url}'>Clicking here</a></p>"); 
+                await _mailService.SendEmailAsync(identityUser.Email, "Confirm your email", "<h1>Welcome to auth demo</h1>"
+                    + $"<p>please confirm your email by <a href='{url}'>Clicking here</a></p>");
 
                 return new UserManagerResponse
                 {
@@ -89,7 +93,7 @@ namespace AspNetIdentity.Api.Services
         {
             var user = await _userManager.FindByEmailAsync(model.Email);
 
-            if(user == null)
+            if (user == null)
             {
                 return new UserManagerResponse
                 {
@@ -132,7 +136,7 @@ namespace AspNetIdentity.Api.Services
             {
                 Message = tokenAsString,
                 IsSuccess = true,
-                ExpireDate= token.ValidTo
+                ExpireDate = token.ValidTo
             };
 
 
@@ -144,7 +148,7 @@ namespace AspNetIdentity.Api.Services
 
             if (user == null)
             {
-                return new UserManagerResponse { IsSuccess = false,Message= "User not found" };
+                return new UserManagerResponse { IsSuccess = false, Message = "User not found" };
 
             }
 
@@ -154,7 +158,7 @@ namespace AspNetIdentity.Api.Services
 
             var result = await _userManager.ConfirmEmailAsync(user, normalToken);
 
-            if(result.Succeeded)
+            if (result.Succeeded)
             {
                 return new UserManagerResponse
                 {
@@ -167,7 +171,7 @@ namespace AspNetIdentity.Api.Services
             throw new NotImplementedException();
         }
 
-        public  async Task<UserManagerResponse> ForgetPasswordAsync(string email)
+        public async Task<UserManagerResponse> ForgetPasswordAsync(string email)
         {
             var user = await _userManager.FindByEmailAsync(email);
             if (user == null)
@@ -181,7 +185,7 @@ namespace AspNetIdentity.Api.Services
 
             var token = await _userManager.GeneratePasswordResetTokenAsync(user);
 
-
+            //string included special charcters. sometimes we can send those with the url from the browser
             var encodedEmailToken = Encoding.UTF8.GetBytes(token);
             //valid token with plain string without no special charactors
             var validToken = WebEncoders.Base64UrlEncode(encodedEmailToken);
@@ -192,9 +196,54 @@ namespace AspNetIdentity.Api.Services
                 "Follow the instructions to reset your password</h1>" +
                 $"<p>to reset your password <a href='{url}'>Click here</a></p>");
 
+            return new UserManagerResponse
+            {
+                IsSuccess = true,
+                Message = "Reset password email has been sent to the user successfully"
+            };
 
 
             throw new NotImplementedException();
+        }
+
+        public async Task<UserManagerResponse> ResetPasswordAsync(ResetPasswordViewModel model)
+        {
+            var user = await _userManager.FindByEmailAsync(model.Email);
+
+            if (user == null)
+            {
+                return new UserManagerResponse
+                {
+                    IsSuccess = false,
+                    Message = "No User Associated with Email"
+                };
+            }
+
+            if (model.NewPassword != model.ConfirmPassword)
+            {
+                return new UserManagerResponse
+                {
+                    IsSuccess = false,
+                    Message = "Password doesn't match its confirmation"
+                };
+            }
+            var decodedToken = WebEncoders.Base64UrlDecode(model.Token);
+
+            string normalToken = Encoding.UTF8.GetString(decodedToken);
+
+            var result = await _userManager.ResetPasswordAsync(user, normalToken, model.NewPassword);
+
+            if (result.Succeeded)
+            {
+                return new UserManagerResponse
+                {
+                    IsSuccess = true,
+                    Message = "Password has been reset succesfully"
+                };
+            }
+
+            return new UserManagerResponse { IsSuccess = false, Message = "Something went wrong", Errors = result.Errors.Select(e => e.Description) };
+
         }
     }
 }

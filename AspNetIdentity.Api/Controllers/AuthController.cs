@@ -1,4 +1,5 @@
-﻿using AspNetIdentity.Api.Services;
+﻿using AspNetIdentity.Api.Models;
+using AspNetIdentity.Api.Services;
 using AspNetIdentity.Shared;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -75,5 +76,41 @@ namespace AspNetIdentity.Api.Controllers
             return BadRequest(); 
 
         }
+
+        [HttpPost("ForgetPassword")]
+        public async Task<IActionResult> ForgotPassword(string email)
+        {
+            if (string.IsNullOrWhiteSpace(email))
+            {
+                return BadRequest();
+            }
+
+            var result = await _userService.ForgetPasswordAsync(email);
+
+            if (result.IsSuccess)
+            {
+                return Ok(result);
+            }
+
+            return BadRequest();
+        }
+
+        [HttpPost("ResetPassword")]
+        public async Task<IActionResult> ResetPassword([FromForm]ResetPasswordViewModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                var result = await _userService.ResetPasswordAsync(model);
+
+                if (result.IsSuccess)
+                {
+                    return Ok(result);
+                }
+                return BadRequest(result);
+            }
+
+            return BadRequest();
+        }
+
     }
 }
