@@ -26,10 +26,19 @@ namespace AspNetIdentity.Api.Controllers
 
             if (result.IsSuccessful)
             {
-                return Redirect($"{configuration["AppUrl"]}/confirmEmail.html");
+                return Ok(result);
             }
 
             return BadRequest();
+
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetEmailStats(string senderEmail)
+        {
+            var result = await mailGunService.GetMailStats(senderEmail);
+
+            return Ok(result);
 
         }
 
